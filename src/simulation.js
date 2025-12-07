@@ -5,9 +5,13 @@ export class PhysicsSimulation {
     // Two-mass model to simulate egg gravity
     // Lower mass (larger) at y < 0
     // Upper mass (smaller) at y > 0
+    // 5-mass model for high-fidelity egg gravity
     this.masses = [
-      { y: -1.5, m: 4.0 }, // Bottom heavy
-      { y: 2.0, m: 2.0 }   // Top lighter
+      { y: -1.5, m: 2.0 }, // Base
+      { y: -0.75, m: 1.5 }, // Mid-Bottom
+      { y: 0.0, m: 1.0 },   // Core
+      { y: 1.0, m: 0.3 },   // Mid-Top
+      { y: 2.0, m: 0.2 }    // Tip
     ];
     this.G = 1.0;
     this.omega = 0.0; // Rotation speed

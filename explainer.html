@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Egg Ocean Sim - How it Works</title>
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: #fdfdfd;
+        }
+        h1, h2 {
+            color: #1a73e8;
+        }
+        .highlight {
+            background: #e8f0fe;
+            padding: 10px;
+            border-left: 5px solid #1a73e8;
+            border-radius: 4px;
+        }
+        code {
+            background: #eee;
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #1a73e8;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">&larr; Back to Simulation</a>
+    <h1>How the Egg Planet Works</h1>
+    
+    <p>This is a real-time 3D visualization of the physics governing land and sea distribution on an egg-shaped world.</p>
+
+    <h2>Equipotential Physics</h2>
+    <p>The water surface isn't just a sphere—it's calculated using a <strong>Gravitational Potential</strong> model. This ensures that water physically settles where the potential energy is equal, just like on Earth.</p>
+
+    <div class="highlight">
+        <strong>The "Egg" Shape:</strong> Gravity is modeled by two internal mass points. One heavy mass at the bottom creates the wide base, and a lighter one at the top creates the tapered end.
+    </div>
+
+    <h2>The "Ring Effect" (Spillover)</h2>
+    <p>When the planet spins fast enough, a <strong>Centrifugal Force</strong> fights against gravity. At the equator, gravity is weakest, making it the highest part of the "Gravity Hill."</p>
+    <p>If you raise the sea level too high, the water spills over the peak and creates a <strong>Detached Accretion Disk</strong>—a floating ring of ice and water trapped in orbit.</p>
+
+    <h2>Limitations</h2>
+    <ul>
+        <li><strong>No Self-Gravity:</strong> The ocean obeys the planet's gravity, but doesn't attract itself.</li>
+        <li><strong>Static Fluids:</strong> This models hydrostatic equilibrium (where water settles), ignoring waves, tides, and currents.</li>
+    </ul>
+
+    <p style="text-align: center; margin-top: 50px; font-size: 0.8em; color: #888;">
+        Built for the Egg Physics Study - 2025
+    </p>
+</body>
+</html>
