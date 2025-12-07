@@ -10,7 +10,7 @@ export class PhysicsSimulation {
       { y: 2.0, m: 2.0 }   // Top lighter
     ];
     this.G = 1.0;
-    this.omega = 0.5; // Rotation speed
+    this.omega = 0.0; // Rotation speed
   }
 
   getPotential(x, y, z) {

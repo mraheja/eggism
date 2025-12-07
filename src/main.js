@@ -7,7 +7,7 @@ import { PhysicsSimulation } from './simulation.js';
 // Configuration
 // Initial Simulation State
 const sim = new PhysicsSimulation();
-sim.omega = 0.2; // Start with slow rotation to stay gravity-dominated
+sim.omega = 0.0; // Start with 0 rotation
 sim.masses[0].m = 4.0;
 sim.masses[1].m = 2.0;
 
@@ -25,7 +25,7 @@ const CONFIG = {
   // Higher potential (closer to 0, e.g. -1.0) means strictly FARTHER out if gravity only.
   // If we want slightly submerged/ocean:
   // We want water level to be roughly the same.
-  rotationSpeed: 0.2,
+  rotationSpeed: 0.0,
   massRatio: 2.0,
 };
 
