@@ -19,7 +19,7 @@ console.log("Surface Potential approx:", surfacePot);
 const CONFIG = {
   eggRadius: 4.0,
   eggTaper: 0.2,
-  waterPotential: surfacePot * 1.05, // Slightly 'lower' (more negative) to sink into the valleys (Earth-like)
+  waterPotential: surfacePot * 1.1, // Sinks water deeper into valleys by default for more land exposure.
   // Physics recap:
   // Potential is negative (e.g. -1.5).
   // Higher potential (closer to 0, e.g. -1.0) means strictly FARTHER out if gravity only.
