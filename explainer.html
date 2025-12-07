@@ -39,25 +39,79 @@
 </head>
 <body>
     <a href="/" class="back-link">&larr; Back to Simulation</a>
-    <h1>How the Egg Planet Works</h1>
+    <h1>Physics Documentation</h1>
     
-    <p>This is a real-time 3D visualization of the physics governing land and sea distribution on an egg-shaped world.</p>
+    <p>This page documents the technical model used to simulate hydrostatic equilibrium on non-spherical bodies.</p>
 
-    <h2>Equipotential Physics</h2>
-    <p>The water surface isn't just a sphere—it's calculated using a <strong>Gravitational Potential</strong> model. This ensures that water physically settles where the potential energy is equal, just like on Earth.</p>
 
-    <div class="highlight">
-        <strong>The "Egg" Shape:</strong> Gravity is modeled by two internal mass points. One heavy mass at the bottom creates the wide base, and a lighter one at the top creates the tapered end.
-    </div>
+<h2>Gravity Model (Discrete Volume Summation)</h2>
+<p>The planet's gravitational field is calculated using a <strong>Stack of 20 internal masses</strong>. These points are
+    distributed linearly from the South Pole (<code>-Radius</code>) to the North Pole (<code>+Radius</code>) along the
+    planet's primary axis.
+    <br><br>
+    To ensure accuracy for different planetary shapes, their separation is multiplied by the <strong>Egg Taper</strong>
+    factor—shrinking them toward a singular point for spheres and stretching them horizontally matches the asymmetric
+    volume as the planet elongates. Each mass slice is dynamically scaled proportional to the local cross-sectional
+    volume (M &prop; R<sup>2</sup>).
+</p>
 
-    <h2>The "Ring Effect" (Spillover)</h2>
-    <p>When the planet spins fast enough, a <strong>Centrifugal Force</strong> fights against gravity. At the equator, gravity is weakest, making it the highest part of the "Gravity Hill."</p>
-    <p>If you raise the sea level too high, the water spills over the peak and creates a <strong>Detached Accretion Disk</strong>—a floating ring of ice and water trapped in orbit.</p>
+<p>This approximates the self-pull of a uniform solid body. For spherical worlds (Taper = 0), these slices analyticaly
+    collapse into a single central point mass.</p>
 
-    <h2>Limitations</h2>
+<h3>The Gravity Rod Model</h3>
+<p>Because accurate 3D volume integration is mathematically expensive, this simulation uses a <strong>"Needle"
+        approximation</strong>. Instead of spreading the mass in all directions (like a solid basketball), we stack it
+    strictly along the vertical axis (like a thin rod).</p>
+
+<ul>
+    <li><strong>Needle Physics:</strong> Gravity is concentrated on a single line. This results in extreme attraction at
+        the polar tips relative to the equator, creating the "deep bulbs" seen at high taper.</li>
+    <li><strong>Solid Planet Reality:</strong> A real egg-shaped world would have mass distributed throughout its 3D
+        volume. Its gravity field would be much smoother and more spherical, as the width of the planet would "cushion"
+        the pull and connect the polar seas into a global ocean.</li>
+</ul>
+
+<h2>Equipotential Logic</h2>
+<p>The "sea level" is an <strong>Equipotential Surface</strong>. Water settles precisely where the sum of gravitational
+    and centrifugal potentials is equal across common radii.</p>
+
+<p>For highly tapered eggs, expect water to congregation primarily at the deep/fat base but also in a separate bulb at
+    the tapered end. This happens because the poles of the planet act like unique centers of attraction, leaving the
+    equator of the long egg high and dry.</p>
+<h2>Simulation Results</h2>
+<table border="1" style="width:100%; border-collapse: collapse; margin-bottom: 20px;">
+    <tr style="background: #e8f0fe;">
+        <th style="padding: 10px;">Simulation State</th>
+        <th style="padding: 10px;">Physical Outcome</th>
+    </tr>
+    <tr>
+        <td style="padding: 10px;"><strong>Taper = 0</strong></td>
+        <td style="padding: 10px;">Perfectly uniform spherical coverage.</td>
+    </tr>
+    <tr>
+        <td style="padding: 10px;"><strong>Moderate Taper</strong></td>
+        <td style="padding: 10px;">The ocean retains an egg-like shape, but settling is concentrated globally near the
+            <strong>fat base</strong> (the area of greatest gravitational volume).
+        </td>
+    </tr>
+    <tr>
+        <td style="padding: 10px;"><strong>High Taper</strong> (Taper > 0.4)</td>
+        <td style="padding: 10px;">Dual accumulation: Primary pooling at the deep base and secondary bulbing at the
+            tapered tip, leaving a dry equatorial band.</td>
+    </tr>
+    <tr>
+        <td style="padding: 10px;"><strong>High Rotation</strong></td>
+        <td style="padding: 10px;">Equatorial bulge and detached ring formation (Roche Spillover).</td>
+    </tr>
+</table>
+
+    <h2>Technical Limitations</h2>
     <ul>
-        <li><strong>No Self-Gravity:</strong> The ocean obeys the planet's gravity, but doesn't attract itself.</li>
-        <li><strong>Static Fluids:</strong> This models hydrostatic equilibrium (where water settles), ignoring waves, tides, and currents.</li>
+        <li><strong>No Self-Gravity:</strong> The sea level is determined by the solid planet's mass, ignoring the gravitational
+            attraction of the water body itself.</li>
+        <li><strong>Static Resolution:</strong> Uses fixed 20-pole summation; higher densities required for engineering
+            accuracy.</li>
+        <li><strong>Vibrational Equilibrium:</strong> Does not simulate acoustic or tidal waves.</li>
     </ul>
 
     <p style="text-align: center; margin-top: 50px; font-size: 0.8em; color: #888;">

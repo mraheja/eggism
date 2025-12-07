@@ -8,31 +8,55 @@ import { PhysicsSimulation } from './simulation.js';
 // Initial Simulation State
 const sim = new PhysicsSimulation();
 sim.omega = 0.0; // Start with 0 rotation
-sim.masses[0].m = 2.0;
-sim.masses[1].m = 1.5;
-sim.masses[2].m = 1.0;
-sim.masses[3].m = 0.3;
-sim.masses[4].m = 0.2;
+function calculate20Masses(radius, taper) {
+  const poleMasses = [];
+  const poleCount = 20;
+  // Step from -Radius to Radius
+  for (let i = 0; i < poleCount; i++) {
+    const yNormalized = -1.0 + (2.0 * i) / (poleCount - 1);
+    // Scale pole separation by taper: 0 taper collapse to origin (Point Mass).
+    const y = yNormalized * radius * taper;
 
-// Calculate sensible defaults based on "Surface" potential at the 'equator' (approx r=4)
-// We want water to be just around the surface.
+    // Egg Taper Geometry Logic (from createEggGeometry)
+    // r(y) = BaseRadius * Scale(y)
+    let sliceScale = 1.0;
+    if (y > 0) {
+      sliceScale = 1.0 - (taper * (y / radius) * 0.6);
+    }
+
+    const sliceRadius = radius * sliceScale;
+
+    // Mass proportional to cross-sectional area (r^2)
+    // Note: This approximates volume integration by summation of cylinders
+    const mass = sliceRadius * sliceRadius;
+
+    poleMasses.push({ y, m: mass });
+  }
+
+  // Normalize total mass for stability
+  const totalM = poleMasses.reduce((acc, p) => acc + p.m, 0);
+  const targetScale = 10.0 / totalM; // Scale total system mass to 10
+  poleMasses.forEach(p => p.m *= targetScale);
+
+  return poleMasses;
+}
+
+// Initial Mass setup (Calculate for default taper/radius)
+const poles = calculate20Masses(4.0, 0.2); // (Hardcoded defaults for first calibration)
+sim.masses = poles;
+
+// Now that sim.masses exists, calculate sensible potential defaults
 const surfacePot = sim.getPotential(4, 0, 0);
-console.log("Surface Potential approx:", surfacePot);
 
 const CONFIG = {
   eggRadius: 4.0,
   eggTaper: 0.2,
-  waterPotential: surfacePot * 1.1, // Sinks water deeper into valleys by default for more land exposure.
-  // Physics recap:
-  // Potential is negative (e.g. -1.5).
-  // Higher potential (closer to 0, e.g. -1.0) means strictly FARTHER out if gravity only.
-  // If we want slightly submerged/ocean:
-  // We want water level to be roughly the same.
+  waterPotential: surfacePot * 1.1, 
   rotationSpeed: 0.0,
   massRatio: 2.0,
 };
 
-// Sync sim with config
+// Sync sim with final config
 sim.omega = CONFIG.rotationSpeed;
 
 // Scene Setup
@@ -241,28 +265,13 @@ function updateWaterSurface() {
 const pane = new Pane({ title: 'Egg Ocean Sim' });
 
 const eggFolder = pane.addFolder({ title: 'Solid Egg' });
-const initialMasses = [
-  { y: -1.5, m: 2.0 },
-  { y: -0.75, m: 1.5 },
-  { y: 0.0, m: 1.0 },
-  { y: 1.0, m: 0.3 },
-  { y: 2.0, m: 0.2 }
-];
 
 eggFolder.addBinding(CONFIG, 'eggTaper', { min: 0, max: 0.5 }).on('change', (ev) => {
   planetMesh.geometry.dispose();
   planetMesh.geometry = createEggGeometry(CONFIG.eggRadius, ev.value);
 
-  // Update Physics to match Taper
-  // Scale mass positions: 0.0 taper => 0.0 separation (Sphere)
-  // 0.2 taper => Original separation (Egg)
-  const scale = ev.value / 0.2;
-
-  sim.masses[0].y = initialMasses[0].y * scale;
-  sim.masses[1].y = initialMasses[1].y * scale;
-  // masses[2] is core (y=0), stays fixed
-  sim.masses[3].y = initialMasses[3].y * scale;
-  sim.masses[4].y = initialMasses[4].y * scale;
+  // High Fidelity 20-mass redistribution
+  sim.masses = calculate20Masses(CONFIG.eggRadius, ev.value);
 
   updateWaterSurface();
 });
