@@ -101,9 +101,11 @@ const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
 scene.add(planetMesh);
 
 // Water Mesh (Equipotential Surface)
+// Water Mesh (Equipotential Surface)
 const waterMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0x22aaff, // Brighter Blue
-  transmission: 0.6, // Less transparent to see color better
+  color: 0xffffff, // Use vertex colors (white base)
+  vertexColors: true,
+  transmission: 0.6,
   opacity: 0.8,
   transparent: true,
   roughness: 0.6,
@@ -115,33 +117,115 @@ const waterMaterial = new THREE.MeshPhysicalMaterial({
 
 // We use a sphere and displace vertices to match equipotential
 const waterGeometry = new THREE.SphereGeometry(1, 128, 128);
+// Setup for vertex colors
+const count = waterGeometry.attributes.position.count;
+const colors = new Float32Array(count * 3);
+waterGeometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+// Save original indices for filtering
+const originalIndices = waterGeometry.index.array.slice();
+
 const waterMesh = new THREE.Mesh(waterGeometry, waterMaterial);
 scene.add(waterMesh);
 
+// Disk Indicator UI
+const diskIndicator = document.createElement('div');
+diskIndicator.style.position = 'absolute';
+diskIndicator.style.bottom = '20px';
+diskIndicator.style.width = '100%';
+diskIndicator.style.textAlign = 'center';
+diskIndicator.style.color = 'cyan';
+diskIndicator.style.fontFamily = 'monospace';
+diskIndicator.style.fontSize = '20px';
+diskIndicator.style.textShadow = '0 0 5px blue';
+diskIndicator.style.pointerEvents = 'none';
+diskIndicator.innerHTML = '⚠ ACCRETION DISK DETECTED ⚠';
+diskIndicator.style.display = 'none';
+document.body.appendChild(diskIndicator);
+
 function updateWaterSurface() {
   const positions = waterGeometry.attributes.position;
+  const colorAttr = waterGeometry.attributes.color;
+  const indices = waterGeometry.index.array;
+
   const p = new THREE.Vector3();
-  const center = new THREE.Vector3(); // Origin
+  const radiusList = new Float32Array(positions.count);
+  let hasDisk = false;
 
-  // Safety clamp for search
-  // If potential is too crazy, we might get weird radii.
-
+  // 1. Update Positions & Colors
   for (let i = 0; i < positions.count; i++) {
     p.fromBufferAttribute(positions, i);
-    p.normalize(); // Get direction
+    p.normalize();
 
     const r = sim.solveRadius(p.x, p.y, p.z, CONFIG.waterPotential);
     p.multiplyScalar(r);
 
     positions.setXYZ(i, p.x, p.y, p.z);
+    radiusList[i] = r;
+
+    // Color logic
+    // Inner Ocean (r < 5.5ish): Blue
+    // Outer Disk (r > 5.5ish): Cyan / Icy
+    // We can use a smooth transition or hard cut visually
+    if (r > 6.0) {
+      // Outer Disk - Icy Cyan
+      colorAttr.setXYZ(i, 0.4, 0.9, 1.0);
+      hasDisk = true;
+    } else {
+      // Inner Ocean - Deep Blue (0x22aaff -> 0.13, 0.66, 1.0)
+      colorAttr.setXYZ(i, 0.13, 0.66, 1.0);
+    }
+  }
+
+  // Update UI & Ship based on Disk Presence
+  if (hasDisk) {
+    diskIndicator.style.display = 'block';
+    if (ship) ship.visible = false;
+  } else {
+    diskIndicator.style.display = 'none';
+    if (ship) ship.visible = true;
+  }
+
+  // 2. Filter Indices (Cut Mesh)
+  // We check each triangle. If vertices straddle the gap (large radius diff), we hide it.
+  const gapThreshold = 2.0; // If radius difference > 2.0, it's a tear.
+
+  for (let i = 0; i < originalIndices.length; i += 3) {
+    const a = originalIndices[i];
+    const b = originalIndices[i + 1];
+    const c = originalIndices[i + 2];
+
+    const rA = radiusList[a];
+    const rB = radiusList[b];
+    const rC = radiusList[c];
+
+    // Check for large jumps
+    const maxDiff = Math.max(
+      Math.abs(rA - rB),
+      Math.abs(rA - rC),
+      Math.abs(rB - rC)
+    );
+
+    if (maxDiff > gapThreshold) {
+      // Degenerate triangle to hide it
+      indices[i] = 0;
+      indices[i + 1] = 0;
+      indices[i + 2] = 0;
+    } else {
+      // Restore original
+      indices[i] = a;
+      indices[i + 1] = b;
+      indices[i + 2] = c;
+    }
   }
 
   waterGeometry.computeVertexNormals();
   positions.needsUpdate = true;
+  colorAttr.needsUpdate = true;
+  waterGeometry.index.needsUpdate = true;
 }
 
-// Initial Update
-updateWaterSurface();
+// Initial Update moved to end of file
 
 // Debug UI
 const pane = new Pane({ title: 'Egg Ocean Sim' });
@@ -301,3 +385,6 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
+
+// Initial Update (After everything is defined)
+updateWaterSurface();
