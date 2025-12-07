@@ -257,7 +257,7 @@ eggFolder.addBinding(CONFIG, 'eggTaper', { min: 0, max: 0.5 }).on('change', (ev)
 
   updateWaterSurface();
 });
-eggFolder.addBinding(CONFIG, 'eggRadius', { min: 1, max: 6 });
+
 
 const physicsFolder = pane.addFolder({ title: 'Physics & Ocean' });
 physicsFolder.addBinding(CONFIG, 'rotationSpeed', {
