@@ -179,6 +179,13 @@ function updateWaterSurface() {
 
   // Update UI & Ship based on Disk Presence
   if (hasDisk) {
+    if (sim.omega > 0.05) {
+      diskIndicator.innerHTML = '⚠ ACCRETION DISK DETECTED ⚠';
+      diskIndicator.style.color = 'cyan';
+    } else {
+      diskIndicator.innerHTML = '⚠ GARGANTUAN OCEAN DETECTED ⚠';
+      diskIndicator.style.color = 'white';
+    }
     diskIndicator.style.display = 'block';
     if (ship) ship.visible = false;
   } else {
