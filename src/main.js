@@ -34,7 +34,7 @@ sim.omega = CONFIG.rotationSpeed;
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050505); // Darker space
+scene.background = new THREE.Color(0xffffff); // White background
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 5, 12);
@@ -47,19 +47,18 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 // Lighting
-// Lighting
-const ambientLight = new THREE.AmbientLight(0x404040, 3.0);
+const ambientLight = new THREE.AmbientLight(0x404040, 2.5); // Slightly brighter ambient
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 4.0);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
 directionalLight.position.set(10, 10, 10);
 scene.add(directionalLight);
 
-const backLight = new THREE.DirectionalLight(0x4040ff, 2.0);
+const backLight = new THREE.DirectionalLight(0x4040ff, 1.0);
 backLight.position.set(-10, -5, -10);
 scene.add(backLight);
 
-const fillLight = new THREE.DirectionalLight(0xffaa00, 1.0); // Warm fill
+const fillLight = new THREE.DirectionalLight(0xffaa00, 0.5);
 fillLight.position.set(-5, 0, 5);
 scene.add(fillLight);
 
@@ -103,11 +102,11 @@ scene.add(planetMesh);
 
 // Water Mesh (Equipotential Surface)
 const waterMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0x0077be, // Earth ocean blue
-  transmission: 0.8, // More transparent
+  color: 0x22aaff, // Brighter Blue
+  transmission: 0.6, // Less transparent to see color better
   opacity: 0.8,
   transparent: true,
-  roughness: 0.05,
+  roughness: 0.6,
   metalness: 0.1,
   ior: 1.33,
   thickness: 0.1,
@@ -200,6 +199,88 @@ physicsFolder.addBinding(CONFIG, 'massRatio', { min: 0.5, max: 5, label: 'Mass B
 });
 
 
+// --- Ship ---
+const shipGeometry = new THREE.ConeGeometry(0.05, 0.2, 8);
+shipGeometry.rotateX(Math.PI / 2); // Point forward? Or Up? Let's say Y is up for the cone locally.
+// Actually, let's make it point Z-forward, Y-up.
+const shipMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+const ship = new THREE.Mesh(shipGeometry, shipMaterial);
+scene.add(ship);
+
+// Ship State
+const shipState = {
+  pos: new THREE.Vector3(0, 0, CONFIG.eggRadius), // Start at equator (ish)
+  vel: new THREE.Vector3(1, 0, 0), // Moving roughly East
+  speed: 0.5
+};
+
+// Initial Ship alignment
+function updateShip(delta) {
+  // 1. Move Ship "Forward" (tangent approximation)
+  // We'll simplisticly rotate the position vector around the Y axis for now, 
+  // OR just add velocity and normalize?
+  // Let's try general physics movement:
+
+  // Simply move perpendicular to "Up" and "Right"?
+  // Let's just orbit it for simplicity first, or move in lat/lon?
+  // General approach:
+  // Move pos by small step.
+  // Snap to surface.
+  // Align.
+
+  // Simple "Sail East" logic:
+  // Cross Up with North (0,1,0) to get East?
+  // Up vector at ship position
+  const up = sim.getGradient(shipState.pos.x, shipState.pos.y, shipState.pos.z).normalize();
+
+  // Approximate North (Project Y-axis onto tangent plane)
+  // If we are at pole, this breaks, but fine for now.
+  let north = new THREE.Vector3(0, 1, 0);
+  // Project N onto plane: N_proj = N - (N.Up)*Up
+  north.sub(up.clone().multiplyScalar(north.dot(up))).normalize();
+
+  // East = North x Up
+  const east = new THREE.Vector3().crossVectors(north, up).normalize();
+
+  // Move East-ish
+  const moveDir = east.clone().multiplyScalar(shipState.speed * delta);
+
+  // Apply movement
+  shipState.pos.add(moveDir);
+
+  // 2. Snap to Surface
+  // Ray from origin to current, solve radius
+  const dir = shipState.pos.clone().normalize();
+  const r = sim.solveRadius(dir.x, dir.y, dir.z, CONFIG.waterPotential);
+  shipState.pos.copy(dir.multiplyScalar(r));
+
+  // 3. Update Mesh
+  ship.position.copy(shipState.pos);
+
+  // 4. Align Mesh
+  // Up is surface normal (Gradient)
+  const newUp = sim.getGradient(shipState.pos.x, shipState.pos.y, shipState.pos.z).normalize();
+
+  // Look at movement direction (East-ish)
+  // We want the ship's local Y to check Up, and local -Z to check forward.
+  // Three.js lookAt aligns -Z axis to target.
+  // Make target = pos + forward
+  // Forward = East (roughly)
+  const forward = new THREE.Vector3().crossVectors(newUp, north).normalize().negate(); // ? Cross math check.
+  // N x U = E.
+  // U x N = -E (West).
+  // Let's just use Quaternions.
+
+  const target = shipState.pos.clone().add(east);
+  ship.lookAt(target); // Z points to target.
+
+  // But we need Up to be Up.
+  // Object3D.up defaults to (0,1,0). We must set it!
+  ship.up.copy(newUp);
+  ship.lookAt(target);
+}
+
+
 // Animation Loop
 const clock = new THREE.Clock();
 
@@ -207,6 +288,7 @@ function animate() {
   requestAnimationFrame(animate);
   const delta = clock.getDelta();
 
+  updateShip(delta);
   controls.update();
   renderer.render(scene, camera);
 }

@@ -70,4 +70,61 @@ export class PhysicsSimulation {
     }
     return (rMin + rMax) * 0.5;
   }
+
+  // Calculate gradient of Potential (Vector pointing "Up" / towards higher potential)
+  // V = -Sum(GM/r) - 0.5*w^2*r_xy^2
+  // Grad(V) = Sum(GM/r^3 * r_vec) - w^2 * r_xy_vec
+  getGradient(x, y, z) {
+    let gx = 0, gy = 0, gz = 0;
+
+    // Gravity Gradient
+    for (const mass of this.masses) {
+      const dx = x;
+      const dy = y - mass.y;
+      const dz = z;
+      const r2 = dx * dx + dy * dy + dz * dz;
+      const r = Math.sqrt(r2);
+      const r3 = r2 * r;
+
+      if (r < 0.1) continue;
+
+      const factor = (this.G * mass.m) / r3;
+      gx += factor * dx;
+      gy += factor * dy;
+      gz += factor * dz;
+    }
+
+    // Centrifugal Gradient (Force points OUT, Potential increases IN? No.)
+    // V_cent = -0.5 * w^2 * (x^2 + z^2)
+    // dV/dx = -w^2 * x
+    // dV/dz = -w^2 * z
+    // Confusing signs. 
+    // Force_cent = +w^2 * r. (Outwards).
+    // Force = -Grad(V). => Grad(V) = -Force. => Points INWARDS?
+    // Let's re-verify.
+    // Potential at 0 is 0. Potential at infinity is -inf? No.
+    // Centrifugal potential usually defined as -0.5 w^2 r^2.
+    // At r=0, V=0. At r=large, V is very negative.
+    // So V decreases as we go out.
+    // Gravity V is -1/r. At r=0, V=-inf. At r=inf, V=0.
+    // So Gravity V increases as we go out.
+
+    // Combining them is tricky. Effective Potential usually:
+    // V_eff = V_grav + V_cent.
+    // If we want "Up" vector (surface normal), we want the Gradient of V_eff.
+    // Surfaces of constant V_eff are what we are drawing.
+    // Normal to isosurface f(x,y,z)=C is Grad(f).
+
+    // Grad(V_grav): d(-1/r)/dr = 1/r^2. Points OUT (away from mass).
+    // Grad(V_cent): d(-0.5 w^2 r^2) / dr = -w^2 r. Points IN (towards axis).
+
+    // So yes:
+    // gx += (GM/r^3)*x  (Positive, Out)
+    // gx += -w^2 * x    (Negative, In)
+
+    gx -= this.omega * this.omega * x;
+    gz -= this.omega * this.omega * z;
+
+    return new THREE.Vector3(gx, gy, gz);
+  }
 }

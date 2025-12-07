@@ -28,31 +28,31 @@ sim.omega = CONFIG.rotationSpeed;
 
 // Scene Setup
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050510); // Slightly bluer space
+scene.background = new THREE.Color(0xffffff); // White background
 
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 5, 12);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth / window.innerHeight);
+renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
 // Lighting
-const ambientLight = new THREE.AmbientLight(0x404040, 3.0);
+const ambientLight = new THREE.AmbientLight(0x404040, 2.5); // Slightly brighter ambient
 scene.add(ambientLight);
 
-const directionalLight = new THREE.DirectionalLight(0xffffff, 4.0);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 2.5); // Reduced from 4.0
 directionalLight.position.set(10, 10, 10);
 scene.add(directionalLight);
 
-const backLight = new THREE.DirectionalLight(0x4040ff, 2.0);
+const backLight = new THREE.DirectionalLight(0x4040ff, 1.0); // Reduced from 2.0
 backLight.position.set(-10, -5, -10);
 scene.add(backLight);
 
-const fillLight = new THREE.DirectionalLight(0xffaa00, 1.0); // Warm fill
+const fillLight = new THREE.DirectionalLight(0xffaa00, 0.5); // Reduced from 1.0
 fillLight.position.set(-5, 0, 5);
 scene.add(fillLight);
 
@@ -74,11 +74,11 @@ scene.add(planetMesh);
 
 // Water Mesh (Equipotential Surface)
 const waterMaterial = new THREE.MeshPhysicalMaterial({
-  color: 0x0077be,
-  transmission: 0.8,
+  color: 0x22aaff,
+  transmission: 0.6,
   opacity: 0.8,
   transparent: true,
-  roughness: 0.05,
+  roughness: 0.6,
   metalness: 0.1,
   ior: 1.33,
   thickness: 0.1,
